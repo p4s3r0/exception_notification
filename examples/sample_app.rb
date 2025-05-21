@@ -4,47 +4,51 @@
 # To run the application: ruby examples/sample_app.rb
 # -------------------------------------------
 
-require 'bundler/inline'
+require "bundler/inline"
 
 gemfile do
-  source 'https://rubygems.org'
+  source "https://rubygems.org"
 
-  gem 'rails', '5.0.0'
-  gem 'exception_notification', '4.3.0'
-  gem 'httparty', '0.15.7'
+  gem "rails", "8.0.1"
+  gem "exception_notification", path: File.expand_path("../..", __FILE__)
+  gem "httparty", "0.22.0"
+  gem "mocha", "2.2.0"
 end
 
 class SampleApp < Rails::Application
   config.middleware.use ExceptionNotification::Rack,
-                        webhook: {
-                          url: 'http://example.com'
-                        }
+    webhook: {
+      url: "https://example.com"
+    }
 
-  config.secret_key_base = 'my secret key base'
+  config.secret_key_base = "my secret key base"
+  config.consider_all_requests_local = true
+  config.hosts << "example.org"
 
   Rails.logger = Logger.new($stdout)
 
   routes.draw do
-    get '/', to: 'exceptions#index'
+    get "/", to: "exceptions#index"
   end
 end
 
-require 'action_controller/railtie'
+require "action_controller/railtie"
 
 class ExceptionsController < ActionController::Base
   def index
-    raise 'Sample exception raised, you should receive a notification!'
+    raise "Sample exception raised, you should receive a notification!"
   end
 end
 
-require 'minitest/autorun'
+require "minitest/autorun"
+require "mocha/minitest"
 
 class Test < Minitest::Test
   include Rack::Test::Methods
 
   def test_raise_exception
-    get '/'
-
+    HTTParty.expects(:send).with(:post, "https://example.com", anything)
+    get "/"
     assert last_response.server_error?
   end
 

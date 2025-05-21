@@ -1,3 +1,29 @@
+== Unreleased
+
+nil
+
+== 5.0.0
+
+* Switch linter to Standardrb. Remove Rubocop.
+* Change default ruby version to 3.4.2.
+* Drop support for old Rails and Ruby versions. Require Rails 7.1 and Ruby 3.2 at least.
+* Add two Rails exceptions to the ignore list: ActionDispatch::Http::MimeNegotiation::InvalidType Rack::Utils::InvalidParameterError
+* Fix some warnings and patches around sidekiq.
+* General repo tidying and updating.
+(All by @kmcphillips)
+
+== 4.6.0
+
+https://github.com/smartinez87/exception_notification/releases/tag/v4.6.0
+
+* Rails 8 compatibility (@kmcphillips)
+* Exception data for teams channel notification (@rachitpant)
+* Report exceptions occurring in Rake tasks and runner commands (@TylerRick)
+* suggest Rails.env.local? in ignore_if block (@glaszig)
+* Improve compatibility with frozen string literal (@Throne3d)
+* Remove unnecessary :channel option from Slack guide doc (@westonganger)
+* Add Content-Type header to Slack notifier - req. for discord (@cdadityang)
+
 == 4.5.0
 
 * enhancements

@@ -37,7 +37,7 @@ module ExceptionNotifier
     def build_subject(exception, options)
       subject =
         "#{options[:sns_prefix]} - #{accumulated_exception_name(exception, options)} occurred"
-      subject.length > 120 ? subject[0...120] + '...' : subject
+      (subject.length > 120) ? subject[0...120] + "..." : subject
     end
 
     def build_message(exception, options)
@@ -49,9 +49,9 @@ module ExceptionNotifier
       else
         env = options[:env]
 
-        kontroller = env['action_controller.instance']
-        data = (env['exception_notifier.exception_data'] || {}).merge(options[:data] || {})
-        request = "#{env['REQUEST_METHOD']} <#{env['REQUEST_URI']}>"
+        kontroller = env["action_controller.instance"]
+        data = (env["exception_notifier.exception_data"] || {}).merge(options[:data] || {})
+        request = "#{env["REQUEST_METHOD"]} <#{env["REQUEST_URI"]}>"
 
         text = "#{exception_name} occurred while #{request}"
         text += " was processed by #{kontroller.controller_name}##{kontroller.action_name}\n" if kontroller
@@ -71,17 +71,17 @@ module ExceptionNotifier
       errors_count = options[:accumulated_errors_count].to_i
 
       measure_word = if errors_count > 1
-                       errors_count
-                     else
-                       exception.class.to_s =~ /^[aeiou]/i ? 'An' : 'A'
-                     end
+        errors_count
+      else
+        /^[aeiou]/i.match?(exception.class.to_s) ? "An" : "A"
+      end
 
       "#{measure_word} #{exception.class}"
     end
 
     def default_options
       {
-        sns_prefix: '[ERROR]',
+        sns_prefix: "[ERROR]",
         backtrace_lines: 10
       }
     end

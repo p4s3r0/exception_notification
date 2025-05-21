@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
-require 'action_dispatch'
-require 'active_support/core_ext/time'
-require 'json'
+require "action_dispatch"
+require "active_support/core_ext/time"
+require "json"
 
 module ExceptionNotifier
   class TeamsNotifier < BaseNotifier
     include ExceptionNotifier::BacktraceCleaner
 
     class MissingController
-      def method_missing(*args, &block); end
+      def method_missing(*args, &block)
+      end
+
+      def respond_to_missing?(*args)
+      end
     end
 
     attr_accessor :httparty
@@ -37,27 +41,23 @@ module ExceptionNotifier
       if @env.nil?
         @controller = @request_items = nil
       else
-        @controller = @env['action_controller.instance'] || MissingController.new
-
+        @controller = @env["action_controller.instance"] || MissingController.new
+        @additional_exception_data = @env["exception_notifier.exception_data"]
         request = ActionDispatch::Request.new(@env)
 
-        @request_items = { url: request.original_url,
-                           http_method: request.method,
-                           ip_address: request.remote_ip,
-                           parameters: request.filtered_parameters,
-                           timestamp: Time.current }
+        @request_items = {url: request.original_url,
+                          http_method: request.method,
+                          ip_address: request.remote_ip,
+                          parameters: request.filtered_parameters,
+                          timestamp: Time.current}
 
-        if request.session['warden.user.user.key']
-          current_user = User.find(request.session['warden.user.user.key'][0][0])
-          @request_items[:current_user] = { id: current_user.id, email: current_user.email }
-        end
       end
 
       payload = message_text
 
       @options[:body] = payload.to_json
       @options[:headers] ||= {}
-      @options[:headers]['Content-Type'] = 'application/json'
+      @options[:headers]["Content-Type"] = "application/json"
       @options[:debug_output] = $stdout
 
       @httparty.post(@webhook_url, @options)
@@ -67,89 +67,96 @@ module ExceptionNotifier
 
     def message_text
       text = {
-        '@type' => 'MessageCard',
-        '@context' => 'http://schema.org/extensions',
-        'summary' => "#{@application_name} Exception Alert",
-        'title' => "⚠️ Exception Occurred in #{env_name} ⚠️",
-        'sections' => [
+        "@type" => "MessageCard",
+        "@context" => "http://schema.org/extensions",
+        "summary" => "#{@application_name} Exception Alert",
+        "title" => "⚠️ Exception Occurred in #{env_name} ⚠️",
+        "sections" => [
           {
-            'activityTitle' => activity_title,
-            'activitySubtitle' => @exception.message.to_s
+            "activityTitle" => activity_title,
+            "activitySubtitle" => @exception.message.to_s
           }
         ],
-        'potentialAction' => []
+        "potentialAction" => []
       }
 
-      text['sections'].push details
-      text['potentialAction'].push gitlab_view_link unless @gitlab_url.nil?
-      text['potentialAction'].push gitlab_issue_link unless @gitlab_url.nil?
-      text['potentialAction'].push jira_issue_link unless @jira_url.nil?
+      text["sections"].push details
+      text["potentialAction"].push gitlab_view_link unless @gitlab_url.nil?
+      text["potentialAction"].push gitlab_issue_link unless @gitlab_url.nil?
+      text["potentialAction"].push jira_issue_link unless @jira_url.nil?
 
       text
     end
 
     def details
       details = {
-        'title' => 'Details',
-        'facts' => []
+        "title" => "Details",
+        "facts" => []
       }
 
-      details['facts'].push message_request unless @request_items.nil?
-      details['facts'].push message_backtrace unless @backtrace.nil?
-
+      details["facts"].push message_request unless @request_items.nil?
+      details["facts"].push message_backtrace unless @backtrace.nil?
+      details["facts"].push additional_exception_data unless @additional_exception_data.nil?
       details
     end
 
     def activity_title
       errors_count = @options[:accumulated_errors_count].to_i
 
-      "#{errors_count > 1 ? errors_count : 'A'} *#{@exception.class}* occurred" +
-        (@controller ? " in *#{controller_and_method}*." : '.')
+      "#{(errors_count > 1) ? errors_count : "A"} *#{@exception.class}* occurred" +
+        (@controller ? " in *#{controller_and_method}*." : ".")
     end
 
     def message_request
       {
-        'name' => 'Request',
-        'value' => "#{hash_presentation(@request_items)}\n  "
+        "name" => "Request",
+        "value" => "#{hash_presentation(@request_items)}\n  "
       }
     end
 
     def message_backtrace(size = 3)
       text = []
-      size = @backtrace.size < size ? @backtrace.size : size
-      text << '```'
-      size.times { |i| text << '* ' + @backtrace[i] }
-      text << '```'
+      size = (@backtrace.size < size) ? @backtrace.size : size
+      text << "```"
+      size.times { |i| text << "* " + @backtrace[i] }
+      text << "```"
 
       {
-        'name' => 'Backtrace',
-        'value' => text.join("  \n").to_s
+        "name" => "Backtrace",
+        "value" => text.join("  \n").to_s
+      }
+    end
+
+    def additional_exception_data
+      {
+        "name" => "Data",
+        "value" => "`#{@additional_exception_data}`\n  "
       }
     end
 
     def gitlab_view_link
       {
-        '@type' => 'ViewAction',
-        'name' => "\u{1F98A} View in GitLab",
-        'target' => [
+        "@type" => "ViewAction",
+        "name" => "\u{1F98A} View in GitLab",
+        "target" => [
           "#{@gitlab_url}/#{@application_name}"
         ]
       }
     end
 
     def gitlab_issue_link
-      link = [@gitlab_url, @application_name, 'issues', 'new'].join('/')
+      link = [@gitlab_url, @application_name, "issues", "new"].join("/")
       params = {
-        'issue[title]' => ['[BUG] Error 500 :',
-                           controller_and_method,
-                           "(#{@exception.class})",
-                           @exception.message].compact.join(' ')
+        "issue[title]" => ["[BUG] Error 500 :",
+          controller_and_method,
+          "(#{@exception.class})",
+          @exception.message].compact.join(" ")
       }.to_query
 
       {
-        '@type' => 'ViewAction',
-        'name' => "\u{1F98A} Create Issue in GitLab",
-        'target' => [
+        "@type" => "ViewAction",
+        "name" => "\u{1F98A} Create Issue in GitLab",
+        "target" => [
           "#{link}/?#{params}"
         ]
       }
@@ -157,9 +164,9 @@ module ExceptionNotifier
 
     def jira_issue_link
       {
-        '@type' => 'ViewAction',
-        'name' => '🐞 Create Issue in Jira',
-        'target' => [
+        "@type" => "ViewAction",
+        "name" => "🐞 Create Issue in Jira",
+        "target" => [
           "#{@jira_url}/secure/CreateIssue!default.jspa"
         ]
       }
@@ -169,7 +176,7 @@ module ExceptionNotifier
       if @controller
         "#{@controller.controller_name}##{@controller.action_name}"
       else
-        ''
+        ""
       end
     end
 
@@ -186,7 +193,7 @@ module ExceptionNotifier
     def rails_app_name
       return unless defined?(Rails) && Rails.respond_to?(:application)
 
-      if ::Gem::Version.new(Rails.version) >= ::Gem::Version.new('6.0')
+      if ::Gem::Version.new(Rails.version) >= ::Gem::Version.new("6.0")
         Rails.application.class.module_parent_name.underscore
       else
         Rails.application.class.parent_name.underscore

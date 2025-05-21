@@ -9,26 +9,26 @@ module ExceptionNotifier
     def initialize(options)
       super
       begin
-        api_token         = options.delete(:api_token)
-        room_name         = options.delete(:room_name)
-        opts              = {
-          api_version: options.delete(:api_version) || 'v1'
+        api_token = options.delete(:api_token)
+        room_name = options.delete(:room_name)
+        opts = {
+          api_version: options.delete(:api_version) || "v1"
         }
         opts[:server_url] = options.delete(:server_url) if options[:server_url]
-        @from             = options.delete(:from) || 'Exception'
-        @room             = HipChat::Client.new(api_token, opts)[room_name]
+        @from = options.delete(:from) || "Exception"
+        @room = HipChat::Client.new(api_token, opts)[room_name]
         @message_template = options.delete(:message_template) || lambda { |exception, errors_count|
           msg = if errors_count > 1
-                  "The exception occurred #{errors_count} times: '#{Rack::Utils.escape_html(exception.message)}'"
-                else
-                  "A new exception occurred: '#{Rack::Utils.escape_html(exception.message)}'"
-                end
+            "The exception occurred #{errors_count} times: '#{Rack::Utils.escape_html(exception.message)}'"
+          else
+            "A new exception occurred: '#{Rack::Utils.escape_html(exception.message)}'"
+          end
           msg += " on '#{exception.backtrace.first}'" if exception.backtrace
           msg
         }
         @message_options = options
-        @message_options[:color] ||= 'red'
-      rescue StandardError
+        @message_options[:color] ||= "red"
+      rescue
         @room = nil
       end
     end

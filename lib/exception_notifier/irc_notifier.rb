@@ -18,7 +18,7 @@ module ExceptionNotifier
       return unless active?
 
       send_notice(exception, options, message) do |msg, _|
-        send_message([*@config.prefix, *msg].join(' '))
+        send_message([*@config.prefix, *msg].join(" "))
       end
     end
 
@@ -29,20 +29,20 @@ module ExceptionNotifier
     private
 
     def parse_options(options)
-      nick = options.fetch(:nick, 'ExceptionNotifierBot')
+      nick = options.fetch(:nick, "ExceptionNotifierBot")
       password = options[:password] ? ":#{options[:password]}" : nil
       domain = options.fetch(:domain, nil)
       port = options[:port] ? ":#{options[:port]}" : nil
-      channel = options.fetch(:channel, '#log')
+      channel = options.fetch(:channel, "#log")
       notice = options.fetch(:notice, false)
       ssl = options.fetch(:ssl, false)
       join = options.fetch(:join, false)
       uri = "irc://#{nick}#{password}@#{domain}#{port}/#{channel}"
       prefix = options.fetch(:prefix, nil)
-      recipients = options[:recipients] ? options[:recipients].join(', ') + ':' : nil
+      recipients = options[:recipients] ? options[:recipients].join(", ") + ":" : nil
 
-      @config.prefix = [*prefix, *recipients].join(' ')
-      @config.irc = { uri: uri, ssl: ssl, notice: notice, join: join }
+      @config.prefix = [*prefix, *recipients].join(" ")
+      @config.irc = {uri: uri, ssl: ssl, notice: notice, join: join}
     end
 
     def active?

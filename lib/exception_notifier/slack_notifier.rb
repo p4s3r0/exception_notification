@@ -15,15 +15,15 @@ module ExceptionNotifier
 
         webhook_url = options.fetch(:webhook_url)
         @message_opts = options.fetch(:additional_parameters, {})
-        @color = @message_opts.delete(:color) { 'danger' }
+        @color = @message_opts.delete(:color) { "danger" }
         @notifier = Slack::Notifier.new webhook_url, options
-      rescue StandardError
+      rescue
         @notifier = nil
       end
     end
 
     def call(exception, options = {})
-      clean_message = exception.message.tr('`', "'")
+      clean_message = exception.message.tr("`", "'")
       attchs = attchs(exception, clean_message, options)
 
       return unless valid?
@@ -32,7 +32,7 @@ module ExceptionNotifier
       send_notice(*args) do |_msg, message_opts|
         message_opts[:channel] = options[:channel] if options.key?(:channel)
 
-        @notifier.ping '', message_opts
+        @notifier.ping "", message_opts
       end
     end
 
@@ -64,22 +64,25 @@ module ExceptionNotifier
       errors_count = options[:accumulated_errors_count].to_i
 
       measure_word = if errors_count > 1
-                       errors_count
-                     else
-                       exception_class.to_s =~ /^[aeiou]/i ? 'An' : 'A'
-                     end
+        errors_count
+      else
+        /^[aeiou]/i.match?(exception_class.to_s) ? "An" : "A"
+      end
 
       exception_name = "*#{measure_word}* `#{exception_class}`"
       env = options[:env]
+
+      options[:headers] ||= {}
+      options[:headers]["Content-Type"] = "application/json"
 
       if env.nil?
         data = options[:data] || {}
         text = "#{exception_name} *occured in background*\n"
       else
-        data = (env['exception_notifier.exception_data'] || {}).merge(options[:data] || {})
+        data = (env["exception_notifier.exception_data"] || {}).merge(options[:data] || {})
 
-        kontroller = env['action_controller.instance']
-        request = "#{env['REQUEST_METHOD']} <#{env['REQUEST_URI']}>"
+        kontroller = env["action_controller.instance"]
+        request = "#{env["REQUEST_METHOD"]} <#{env["REQUEST_URI"]}>"
         text = "#{exception_name} *occurred while* `#{request}`"
         text += " *was processed by* `#{kontroller.controller_name}##{kontroller.action_name}`" if kontroller
         text += "\n"
@@ -90,19 +93,19 @@ module ExceptionNotifier
 
     def fields(clean_message, backtrace, data)
       fields = [
-        { title: 'Exception', value: clean_message },
-        { title: 'Hostname', value: Socket.gethostname }
+        {title: "Exception", value: clean_message},
+        {title: "Hostname", value: Socket.gethostname}
       ]
 
       if backtrace
         formatted_backtrace = "```#{backtrace.first(@backtrace_lines).join("\n")}```"
-        fields << { title: 'Backtrace', value: formatted_backtrace }
+        fields << {title: "Backtrace", value: formatted_backtrace}
       end
 
       unless data.empty?
         deep_reject(data, @ignore_data_if) if @ignore_data_if.is_a?(Proc)
         data_string = data.map { |k, v| "#{k}: #{v}" }.join("\n")
-        fields << { title: 'Data', value: "```#{data_string}```" }
+        fields << {title: "Data", value: "```#{data_string}```"}
       end
 
       fields.concat(@additional_fields) if @additional_fields

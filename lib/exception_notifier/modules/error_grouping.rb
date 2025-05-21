@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'active_support'
-require 'active_support/core_ext/numeric/time'
-require 'active_support/concern'
+require "active_support"
+require "active_support/core_ext/numeric/time"
+require "active_support/concern"
 
 module ExceptionNotifier
   module ErrorGrouping
@@ -31,7 +31,7 @@ module ExceptionNotifier
         count =
           begin
             error_grouping_cache.read(error_key)
-          rescue StandardError => e
+          rescue => e
             log_cache_error(error_grouping_cache, e, :read)
             fallback_cache_store.read(error_key)
           end
@@ -41,7 +41,7 @@ module ExceptionNotifier
 
       def save_error_count(error_key, count)
         error_grouping_cache.write(error_key, count, expires_in: error_grouping_period)
-      rescue StandardError => e
+      rescue => e
         log_cache_error(error_grouping_cache, e, :write)
         fallback_cache_store.write(error_key, count, expires_in: error_grouping_period)
       end

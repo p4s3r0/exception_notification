@@ -37,7 +37,7 @@ module ExceptionNotifier
         text << '*Backtrace:*'
         text << backtrace
       end
-      
+
       _text, data = information_from_options(exception.class, options)
       text << ''
       text << '*Data:*'
@@ -46,7 +46,7 @@ module ExceptionNotifier
       text << '```'
       text.compact.join("\n")
     end
-    
+
     def information_from_options(exception_class, options)
       errors_count = options[:accumulated_errors_count].to_i
 
@@ -74,7 +74,6 @@ module ExceptionNotifier
 
       [text, data]
     end
-  
+
   end
-  
 end
